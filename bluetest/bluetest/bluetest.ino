@@ -19,7 +19,6 @@ void setup(void)
 
 void loop(void)
 {
-  // Check for data
   String data = String("");
 
   while ( ble.available() )
