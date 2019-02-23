@@ -2,3 +2,4 @@ libraries/
 Basic_LED/
 colour_display/
 i2c_scanner/
+.DS_Store
