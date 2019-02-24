@@ -1,6 +1,9 @@
+#include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1351.h>
 #include <SPI.h>
+#include "Adafruit_BLE.h"
+#include "Adafruit_BluefruitLE_UART.h"
 
 //Xmas Tree pins
 #define dc   6  // Blue
@@ -8,6 +11,13 @@
 #define rst  7  // Orange
 // SCL 13 White 
 // SDA 11 Purple
+
+// Bluefruit config
+#include "BluefruitConfig.h"
+#include <SoftwareSerial.h>
+
+SoftwareSerial bluefruitSS = SoftwareSerial(BLUEFRUIT_SWUART_TXD_PIN, BLUEFRUIT_SWUART_RXD_PIN);
+Adafruit_BluefruitLE_UART ble(bluefruitSS, BLUEFRUIT_UART_MODE_PIN, BLUEFRUIT_UART_CTS_PIN, BLUEFRUIT_UART_RTS_PIN);
  
 //Colour definitions:
 #define RED      0xF800
@@ -17,9 +27,6 @@
 #define BLACK    0x0000
  
 Adafruit_SSD1351 tft = Adafruit_SSD1351(cs, dc, rst);
-//Adafruit_SSD1351 tft = Adafruit_SSD1351(cs, dc, 11, 13, rst);
-
-
 
 int LOOP_INTERVAL = 50;
 
@@ -47,9 +54,9 @@ int time_travel_countdown;
 void setup() {
   pinMode(flux_pin, OUTPUT);
   digitalWrite(flux_pin, HIGH);
-
   pinMode(pushbutton_pin, INPUT_PULLUP);
 
+  ble.begin(false);
   setup_xmas_tree();
 
 }
@@ -58,6 +65,7 @@ void setup() {
 void loop() 
 {
   button_state = digitalRead(pushbutton_pin);
+  read_bluefruit();
 
   if (!fluxing) 
   {
@@ -70,7 +78,7 @@ void loop()
     {
       countup();
     }
-    if (button_countup >=1000) 
+    if (button_countup >= 1000) 
     {
       disarm_time_circuits();
     }
@@ -390,5 +398,29 @@ void clear_xmas_tree()
   }
 }
 
- 
+void read_bluefruit()
+{
+  String data = String("");
 
+  while ( ble.available() )
+  {
+    int c = ble.read();
+    data += (char)c;
+  }
+
+  data.trim();
+  data.toUpperCase();
+  if ( data == "T" ) 
+  {
+    // Echo back to bluefruit
+    if(!fluxing) 
+    {
+      ble.print("Time Circuits On!\n");
+    }
+    else 
+    {
+      ble.print("Initiating Time Travel Sequence!!\n");
+    }
+    button_state = LOW;
+  }
+}
